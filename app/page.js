@@ -6,49 +6,63 @@ import Metrics from '@/components/Metrics';
 import DataTable from '@/components/DataTable';
 import ParkingView from '@/components/ParkingView';
 import PriceView from '@/components/PriceView';
-import SettingsView from '@/components/SettingsView'; // 1. Ky import u shtua këtu lart
+import SettingsView from '@/components/SettingsView';
+import ToastCenter from '@/components/ToastCenter'; // Importo Qendrën e Njoftimeve
 
 export default function Home() {
-  // Inicializojmë state-in për faqen aktive (Default: overview)
   const [activeTab, setActiveTab] = useState('overview');
+  const [toasts, setToasts] = useState([]); // State për njoftimet live
 
-  // 2. Ky është funksioni renderContent ku u shtua case 'settings'
+  // Funksioni që thirret kur DataTable gjeneron një sinjal të ri automatik
+  const handleNewSignal = (signal) => {
+    const newToast = {
+      id: signal.id,
+      type: signal.type,
+      location: signal.location,
+    };
+    
+    setToasts(prev => [...prev, newToast]);
+
+    // Zhduke njoftimin automatikisht pas 4 sekondave
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== signal.id));
+    }, 4000);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
         return (
           <>
             <Metrics />
-            <DataTable />
+            {/* Kalojmë funksionin te tabela */}
+            <DataTable onNewSignal={handleNewSignal} />
           </>
         );
       case 'parking':
         return <ParkingView />;
       case 'prices':
         return <PriceView />;
-      case 'settings': // U shtua rasti i ri për settings
+      case 'settings':
         return <SettingsView />;
       default:
         return <Metrics />;
     }
   };
 
-  // 3. Ky është funksioni getHeaderTitle ku u shtua kushti i ri për titullin
   const getHeaderTitle = () => {
     if (activeTab === 'overview') return 'System Overview';
     if (activeTab === 'parking') return 'Pay-by-Plate Management';
     if (activeTab === 'prices') return 'Consumer Price Tracker';
-    if (activeTab === 'settings') return 'Node Configurations'; // U shtua titulli i ri
+    if (activeTab === 'settings') return 'Node Configurations';
     return 'System Overview';
   };
 
   return (
     <main className="min-h-screen bg-[#0B0F19] font-sans text-white antialiased selection:bg-blue-600 selection:text-white">
-      {/* Kalojmë state-in te Sidebar */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <div className="pl-64 min-h-screen flex flex-col">
-        {/* Header Dinamik */}
         <header className="w-full h-20 border-b border-white/5 flex items-center justify-between px-10 bg-[#0B0F19]/80 backdrop-blur-md sticky top-0 z-20">
           <div>
             <h2 className="text-base font-semibold tracking-wide text-white transition-all duration-300">
@@ -65,7 +79,6 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Zona e Përmbajtjes me AnimatePresence */}
         <div className="p-10 flex-1 bg-[#070A13] overflow-hidden">
           <AnimatePresence mode="wait">
             <div key={activeTab}>
@@ -74,6 +87,9 @@ export default function Home() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Shtojmë komponentin ToastCenter në fund të ekranit */}
+      <ToastCenter toasts={toasts} setToasts={setToasts} />
     </main>
   );
 }

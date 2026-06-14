@@ -1,42 +1,65 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const INITIAL_ROWS = [
-  { id: 'TRK-902', type: 'Parking', location: 'Manhattan Zone A', status: 'Paid', fee: '$12.50', time: '14:22:10' },
-  { id: 'TRK-411', type: 'Grocery', location: 'Supermarket Node 4', status: 'Updated', fee: '$4.20', time: '14:19:45' },
-  { id: 'TRK-302', type: 'Parking', location: 'Brooklyn Sector 2', status: 'Overdue', fee: '$35.00', time: '14:15:02' },
-  { id: 'TRK-881', type: 'Grocery', location: 'Wholesale Depot 1', status: 'Updated', fee: '$2.85', time: '14:02:11' },
-  { id: 'TRK-105', type: 'Parking', location: 'Queens Blvd Pier', status: 'Paid', fee: '$8.00', time: '13:58:30' },
+  { id: 'TRK-902', type: 'Parking', location: 'Manhattan Zone A', status: 'Paid', fee: '$12.50', time: '18:21:10' },
+  { id: 'TRK-411', type: 'Grocery', location: 'Supermarket Node 4', status: 'Updated', fee: '$4.20', time: '18:19:45' },
+  { id: 'TRK-302', type: 'Parking', location: 'Brooklyn Sector 2', status: 'Overdue', fee: '$35.00', time: '18:15:02' },
 ];
 
-export default function DataTable() {
+// Të dhëna të simuluara që do të vijnë "live" nga rrjeti
+const NEW_STREAM_DATA = [
+  { id: 'TRK-881', type: 'Grocery', location: 'Wholesale Depot 1', status: 'Updated', fee: '$2.85', time: '18:22:15' },
+  { id: 'TRK-105', type: 'Parking', location: 'Queens Blvd Pier', status: 'Paid', fee: '$8.00', time: '18:22:30' },
+  { id: 'TRK-704', type: 'Parking', location: 'Bronx Hub Terminal', status: 'Overdue', fee: '$22.00', time: '18:22:45' },
+];
+
+export default function DataTable({ onNewSignal }) {
+  const [rows, setRows] = useState(INITIAL_ROWS);
   const [filter, setFilter] = useState('All');
 
-  // Logjika e filtrimit të të dhënave në kohë reale
+  // Simuluesi i Rrjedhës së të Dhënave në Kohë Reale (Pika kyçe për Droxic)
+  useEffect(() => {
+    let index = 0;
+    const interval = setInterval(() => {
+      if (index < NEW_STREAM_DATA.length) {
+        const newSignal = NEW_STREAM_DATA[index];
+        
+        // Shto rreshtin e ri në fillim të tabelës
+        setRows(prevRows => [newSignal, ...prevRows]);
+        
+        // Njofto sistemin qendror që të shfaqë Toast Notification në ekran
+        if (onNewSignal) onNewSignal(newSignal);
+        
+        index++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 7000); // Çdo 7 sekonda vjen një sinjal i ri
+
+    return () => clearInterval(interval);
+  }, [onNewSignal]);
+
   const filteredData = filter === 'All' 
-    ? INITIAL_ROWS 
-    : INITIAL_ROWS.filter(row => row.type === filter);
+    ? rows 
+    : rows.filter(row => row.type === filter);
 
   return (
-    <div className="bg-[#0F172A] border border-white/5 rounded-xl p-6 shadow-sm">
-      {/* Koka e Tabelës dhe Karta e Filtrave */}
+    <div className="bg-[#0F172A] border border-white/5 rounded-xl p-6 shadow-sm mt-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h3 className="text-sm font-semibold tracking-wide text-white uppercase">Live System Activity</h3>
-          <p className="text-xs text-white/40 font-mono mt-0.5">Real-time civic data stream</p>
+          <p className="text-xs text-white/40 font-mono mt-0.5">Real-time civic data stream active</p>
         </div>
         
-        {/* Butonat e Filtrave */}
         <div className="flex bg-[#0B0F19] p-1 rounded-lg border border-white/5">
           {['All', 'Parking', 'Grocery'].map((type) => (
             <button
               key={type}
               onClick={() => setFilter(type)}
-              className={`px-3 py-1.5 text-[11px] font-medium tracking-wide rounded-md transition-all ${
-                filter === type 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'text-white/40 hover:text-white/80'
+              className={`px-3 py-1.5 text-[11px] font-medium tracking-wide rounded-md transition-all cursor-pointer ${
+                filter === type ? 'bg-blue-600 text-white shadow-md' : 'text-white/40 hover:text-white/80'
               }`}
             >
               {type === 'All' ? 'All Signals' : type}
@@ -45,7 +68,6 @@ export default function DataTable() {
         </div>
       </div>
 
-      {/* Struktura e Tabelës Responsive */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -64,10 +86,10 @@ export default function DataTable() {
                 <motion.tr
                   key={row.id}
                   layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: -15, backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
+                  animate={{ opacity: 1, y: 0, backgroundColor: 'transparent' }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   className="text-white/80 hover:bg-white/[0.02] transition-colors"
                 >
                   <td className="py-4 pl-4 font-mono text-blue-400 font-medium">{row.id}</td>
